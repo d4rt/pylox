@@ -50,6 +50,7 @@ class TokenType(Enum):
     # End of File
     EOF = 39
 
+
 @dataclass
 class Token:
     type: TokenType = TokenType.NIL

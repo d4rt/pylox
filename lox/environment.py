@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 
 
 @dataclass
-class Environment():
-    enclosing: 'Environment' = None
+class Environment:
+    enclosing: "Environment" = None
     values: dict[str, object] = field(default_factory=dict)
 
     def define(self, name: str, val: object) -> None:

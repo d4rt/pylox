@@ -41,7 +41,7 @@ class Parser:
         if self.match(TokenType.EQUAL):
             initializer = self.expression()
 
-        self.consume(TokenType.SEMICOLON,"Expect ';' after variable declaration.")
+        self.consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.")
         return Var(name, initializer)
 
     def expression(self) -> Expr:
@@ -49,7 +49,7 @@ class Parser:
 
     def assignment(self) -> Expr:
         expr = self.log_or()
-        if (self.match(TokenType.EQUAL)):
+        if self.match(TokenType.EQUAL):
             equals = self.previous()
             value = self.assignment()
             if isinstance(expr, Variable):
@@ -77,13 +77,13 @@ class Parser:
 
         then_branch = self.statement()
         else_branch = None
-        if (self.match(TokenType.ELSE)):
+        if self.match(TokenType.ELSE):
             else_branch = self.statement()
         return If(condition, then_branch, else_branch)
 
     def block(self) -> list[Stmt]:
         statements = []
-        while( not self.check(TokenType.RIGHT_BRACE) and not self.isAtEnd() ):
+        while not self.check(TokenType.RIGHT_BRACE) and not self.isAtEnd():
             statements.append(self.declaration())
         self.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.")
         return statements
@@ -122,7 +122,7 @@ class Parser:
 
         body = self.statement()
         if inc is not None:
-            body = Block([body,inc])
+            body = Block([body, inc])
 
         body = While(cond, body)
 
@@ -139,7 +139,7 @@ class Parser:
     def log_or(self) -> Expr:
         expr = self.log_and()
 
-        while (self.match(TokenType.OR)):
+        while self.match(TokenType.OR):
             operator = self.previous()
             right = self.log_and()
             expr = Logical(expr, operator, right)
@@ -149,7 +149,7 @@ class Parser:
     def log_and(self) -> Expr:
         expr = self.equality()
 
-        while(self.match(TokenType.AND)):
+        while self.match(TokenType.AND):
             operator = self.previous()
             right = self.equality()
             expr = Logical(expr, operator, right)

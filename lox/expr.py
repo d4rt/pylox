@@ -45,7 +45,7 @@ class Binary(Expr):
         self.right = right
 
     def __str__(self) -> str:
-        return "BinaryExpr "  + str(self.left) + str(self.operator) + str(self.right)
+        return "BinaryExpr " + str(self.left) + str(self.operator) + str(self.right)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_binary_expr(self)
@@ -56,7 +56,7 @@ class Grouping(Expr):
         self.expression = expression
 
     def __str__(self) -> str:
-        return "GroupingExpr "  + str(self.expression)
+        return "GroupingExpr " + str(self.expression)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_grouping_expr(self)
@@ -67,7 +67,7 @@ class Literal(Expr):
         self.value = value
 
     def __str__(self) -> str:
-        return "LiteralExpr "  + str(self.value)
+        return "LiteralExpr " + str(self.value)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_literal_expr(self)
@@ -80,7 +80,7 @@ class Logical(Expr):
         self.right = right
 
     def __str__(self) -> str:
-        return "LogicalExpr "  + str(self.left) + str(self.operator) + str(self.right)
+        return "LogicalExpr " + str(self.left) + str(self.operator) + str(self.right)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_logical_expr(self)
@@ -92,7 +92,7 @@ class Unary(Expr):
         self.right = right
 
     def __str__(self) -> str:
-        return "UnaryExpr "  + str(self.operator) + str(self.right)
+        return "UnaryExpr " + str(self.operator) + str(self.right)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_unary_expr(self)
@@ -103,7 +103,7 @@ class Variable(Expr):
         self.name = name
 
     def __str__(self) -> str:
-        return "VariableExpr "  + str(self.name)
+        return "VariableExpr " + str(self.name)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_variable_expr(self)
@@ -115,7 +115,7 @@ class Assign(Expr):
         self.value = value
 
     def __str__(self) -> str:
-        return "AssignExpr "  + str(self.name) + str(self.value)
+        return "AssignExpr " + str(self.name) + str(self.value)
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_assign_expr(self)

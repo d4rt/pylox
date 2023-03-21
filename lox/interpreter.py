@@ -24,9 +24,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.evaluate(stmt.expression)
 
     def visit_if_stmt(self, stmt: If) -> None:
-        if (Interpreter.is_truthy(self.evaluate(stmt.condition))):
+        if Interpreter.is_truthy(self.evaluate(stmt.condition)):
             self.execute(stmt.then_branch)
-        elif (stmt.else_branch is not None):
+        elif stmt.else_branch is not None:
             self.execute(stmt.else_branch)
 
     def visit_print_stmt(self, stmt: Print) -> None:
@@ -42,7 +42,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_while_stmt(self, stmt: While) -> None:
         while self.is_truthy(self.evaluate(stmt.condition)):
-               self.execute(stmt.body)
+            self.execute(stmt.body)
 
     def visit_block_stmt(self, stmt: Block) -> None:
         self.execute_block(stmt.statements, Environment(enclosing=self.environment))
@@ -87,7 +87,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 self.execute(stmt)
         finally:
             self.environment = previous
-
 
     def visit_unary_expr(self, expr: Unary):
         right = self.evaluate(expr.right)
@@ -160,7 +159,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
             if isinstance(left, (str, float)) and isinstance(right, (str, float)):
                 if type(left) == type(right):
                     return left + right
-            raise LoxRuntimeError(expr.operator, "Operands must be two numbers or two strings.")
+            raise LoxRuntimeError(
+                expr.operator, "Operands must be two numbers or two strings."
+            )
         if t == TokenType.GREATER:
             Interpreter.check_number_operands(expr.operator, left, right)
             return left > right

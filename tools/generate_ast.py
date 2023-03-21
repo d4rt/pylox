@@ -79,10 +79,19 @@ class {base}(ABC):
                 for field in types[t]:
                     field_name = field.split(":")[0]
                     f.write(f"        self.{field_name} = {field_name}\n")
-                f.write(f"""
+                f.write(
+                    f"""
     def __str__(self) -> str:
-        return "{t}{base} "  + """)
-                f.write(" + ".join([("str(self." + field.split(":")[0] + ")") for field in types[t]]))
+        return "{t}{base} "  + """
+                )
+                f.write(
+                    " + ".join(
+                        [
+                            ("str(self." + field.split(":")[0] + ")")
+                            for field in types[t]
+                        ]
+                    )
+                )
                 f.write(
                     f"""
 

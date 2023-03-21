@@ -33,7 +33,7 @@ class Lox:
     def run(self, program: str) -> None:
         scanner = Scanner(program, lox=self)
         tokens = scanner.scan_tokens()
-        parser = Parser(tokens,lox=self)
+        parser = Parser(tokens, lox=self)
         statements = parser.parse()
         interpreter = Interpreter(lox=self)
         if self.had_error:
@@ -47,7 +47,8 @@ class Lox:
         print(
             f"""{error}
 [line {error.token.line}]
-""", file=stderr
+""",
+            file=stderr,
         )
         self.had_runtime_error = True
 

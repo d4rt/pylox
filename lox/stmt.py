@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from lox.lox_token import Token
-from lox.expr import Expr
+from lox.expr import Expr, Variable
 
 
 class StmtVisitor(ABC):
@@ -83,12 +83,15 @@ class Function(Stmt):
 
 
 class Class(Stmt):
-    def __init__(self, name: Token, methods: list[Function]) -> None:
+    def __init__(
+        self, name: Token, superclass: Variable, methods: list[Function]
+    ) -> None:
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def __str__(self) -> str:
-        return "ClassStmt " + str(self.name) + str(self.methods)
+        return "ClassStmt " + str(self.name) + str(self.superclass) + str(self.methods)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_class_stmt(self)

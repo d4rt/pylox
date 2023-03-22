@@ -69,13 +69,18 @@ class Return(RuntimeError):
 
 
 class LoxClass(LoxCallable):
-    def __init__(self, name: str, methods: dict[str, LoxFunction]):
+    def __init__(
+        self, name: str, superclass: "LoxClass", methods: dict[str, LoxFunction]
+    ):
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def find_method(self, name: str):
         if name in self.methods:
             return self.methods[name]
+        if self.superclass is not None:
+            return self.superclass.find_method(name)
 
     def call(self, interpreter: "Interpreter", arguments: list):
         instance = LoxInstance(self)
@@ -166,14 +171,28 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.execute_block(stmt.statements, Environment(enclosing=self.environment))
 
     def visit_class_stmt(self, stmt: Class) -> None:
+        superclass = None
+        if stmt.superclass is not None:
+            superclass = self.evaluate(stmt.superclass)
+            if not isinstance(superclass, LoxClass):
+                raise LoxRuntimeError(
+                    stmt.superclass.name, "Superclass must be a class."
+                )
         self.environment.define(stmt.name.lexeme, None)
+
+        if superclass is not None:
+            self.environment = Environment(self.environment)
+            self.environment.define("super", superclass)
 
         methods = {}
         for method in stmt.methods:
             fn = LoxFunction(method, self.environment, method.name.lexeme == "init")
             methods[method.name.lexeme] = fn
 
-        klass = LoxClass(stmt.name.lexeme, methods)
+        klass = LoxClass(stmt.name.lexeme, superclass, methods)
+
+        if superclass is not None:
+            self.environment = self.environment.enclosing
         self.environment.assign(stmt.name, klass)
 
     def visit_assign_expr(self, expr: Assign):
@@ -217,6 +236,17 @@ class Interpreter(ExprVisitor, StmtVisitor):
         val = self.evaluate(expr.value)
         obj.set(expr.name, val)
         return val
+
+    def visit_super_expr(self, expr: Super):
+        distance = self.locals.get(expr)
+        superclass = self.environment.get_at(distance, "super")
+        obj = self.environment.get_at(distance - 1, "this")
+        method = superclass.find_method(expr.method.lexeme)
+        if method is None:
+            raise LoxRuntimeError(
+                expr.method, f"Undefined property '{expr.method.lexeme}'."
+            )
+        return method.bind(obj)
 
     def visit_this_expr(self, expr: This):
         return self.lookup_variable(expr.keyword, expr)

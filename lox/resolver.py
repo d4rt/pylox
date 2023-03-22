@@ -17,6 +17,7 @@ class FunctionType(Enum):
 class ClassType(Enum):
     NONE = 0
     CLASS = 1
+    SUBCLASS = 2
 
 
 class Resolver(ExprVisitor, StmtVisitor):
@@ -88,6 +89,18 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
+        if stmt.superclass is not None:
+            if stmt.name.lexeme == stmt.superclass.name.lexeme:
+                self.lox.parse_error(
+                    stmt.superclass.name, "A class can't inherit from itself."
+                )
+            self.current_class = ClassType.SUBCLASS
+            self.resolve(stmt.superclass)
+
+        if stmt.superclass is not None:
+            self.begin_scope()
+            self.scopes[-1]["super"] = True
+
         self.begin_scope()
         self.scopes[-1]["this"] = True
 
@@ -98,6 +111,9 @@ class Resolver(ExprVisitor, StmtVisitor):
             self.resolve_function(method, decl)
 
         self.end_scope()
+
+        if stmt.superclass is not None:
+            self.end_scope()
 
         self.current_class = enclosing_class
 
@@ -174,6 +190,16 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_set_expr(self, expr: Set):
         self.resolve(expr.value)
         self.resolve(expr.object)
+
+    def visit_super_expr(self, expr: Super):
+        if self.current_class == ClassType.NONE:
+            self.lox.parse_error(expr.keyword, "Can't use 'super' outside of a class.")
+        elif self.current_class != ClassType.SUBCLASS:
+            self.lox.parse_error(
+                expr.keyword, "Can't use 'super' in a class with no superclass."
+            )
+
+        self.resolve_local(expr, expr.keyword)
 
     def visit_this_expr(self, expr: This):
         if self.current_class == ClassType.NONE:

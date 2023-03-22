@@ -12,7 +12,7 @@ from lox.lox_token import Token
 """
     STMT_IMPORTS = """from abc import ABC, abstractmethod
 from lox.lox_token import Token
-from lox.expr import Expr
+from lox.expr import Expr, Variable
 
 
 """
@@ -21,6 +21,7 @@ from lox.expr import Expr
         "Binary": ["left: Expr", "operator: Token", "right: Expr"],
         "Call": ["callee: Expr", "paren: Token", "arguments: list[Expr]"],
         "Get": ["object: Expr", "name: Token"],
+        "Super": ["keyword: Token", "method: Token"],
         "This": ["keyword: Token"],
         "Grouping": ["expression: Expr"],
         "Literal": ["value: object"],
@@ -34,7 +35,7 @@ from lox.expr import Expr
         "Block": ["statements: list[Stmt]"],
         "Expression": ["expression: Expr"],
         "Function": ["name: Token", "params: list[Token]", "body: list[Stmt]"],
-        "Class": ["name: Token", "methods: list[Function]"],
+        "Class": ["name: Token", "superclass: Variable", "methods: list[Function]"],
         "If": ["condition: Expr", "then_branch: Stmt", "else_branch: Stmt"],
         "While": ["condition: Expr", "body: Stmt"],
         "Print": ["expression: Expr"],

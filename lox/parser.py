@@ -43,11 +43,15 @@ class Parser:
 
         parameters = []
         if not self.check(TokenType.RIGHT_PAREN):
-            parameters.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+            parameters.append(
+                self.consume(TokenType.IDENTIFIER, "Expect parameter name.")
+            )
             while self.match(TokenType.COMMA):
                 if len(parameters) >= 255:
                     self.error(self.peek(), "Can't have more than 255 parameters.")
-                parameters.append(self.consume(TokenType.IDENTIFIER, "Expect parameter name."))
+                parameters.append(
+                    self.consume(TokenType.IDENTIFIER, "Expect parameter name.")
+                )
         self.consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.")
 
         self.consume(TokenType.LEFT_BRACE, "Expect '{' before " + kind + " body.")
@@ -252,16 +256,13 @@ class Parser:
         arguments = []
         if not self.check(TokenType.RIGHT_PAREN):
             while True:
-                if (len(arguments) >= 255):
+                if len(arguments) >= 255:
                     self.error(self.peek(), "Can't have more than 255 arguments.")
                 arguments.append(self.expression())
                 if not self.match(TokenType.COMMA):
                     break
         paren = self.consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.")
         return Call(callee, paren, arguments)
-
-
-
 
     def primary(self) -> Expr:
         if self.match(TokenType.FALSE):

@@ -9,26 +9,32 @@ from dataclasses import dataclass
 from abc import ABC
 from time import time
 
+
 class LoxCallable(ABC):
-    def call(self, interpreter: 'Interpreter', arguments: list):
+    def call(self, interpreter: "Interpreter", arguments: list):
         raise NotImplementedError
+
     def arity(self) -> int:
         raise NotImplementedError
 
+
 class ClockCallable(LoxCallable):
-    def call(self, interpreter: 'Interpreter', arguments: list):
+    def call(self, interpreter: "Interpreter", arguments: list):
         return float(time())
+
     def arity(self) -> int:
         return 0
+
     def __str__(self) -> str:
         return "<native fn>"
+
 
 class LoxFunction(LoxCallable):
     def __init__(self, declaration: Function, closure: Environment):
         self.declaration = declaration
         self.closure = closure
 
-    def call(self, interpreter: 'Interpreter', arguments: list):
+    def call(self, interpreter: "Interpreter", arguments: list):
         env = Environment(self.closure)
         for p, a in zip(self.declaration.params, arguments):
             env.define(p.lexeme, a)
@@ -43,10 +49,12 @@ class LoxFunction(LoxCallable):
     def __str__(self) -> str:
         return f"<fn {self.declaration.name.lexeme}>"
 
+
 class Return(RuntimeError):
     def __init__(self, value):
         super().__init__()
         self.value = value
+
 
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self, lox: "Lox", env: Environment = Environment()):
@@ -55,6 +63,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.global_environment = env
         self.environment = self.global_environment
         self.global_environment.define("clock", ClockCallable())
+        self.locals = {}
 
     def interpret(self, statements: list[Stmt]):
         try:
@@ -98,11 +107,22 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_assign_expr(self, expr: Assign):
         value = self.evaluate(expr.value)
-        self.environment.assign(expr.name, value)
+        distance = self.locals.get(expr)
+        if distance is not None:
+            self.environment.assign_at(distance, expr.name, value)
+        else:
+            self.global_environment.assign(expr.name, value)
         return value
 
     def visit_variable_expr(self, expr: Variable):
-        return self.environment.get(expr.name)
+        return self.lookup_variable(expr.name, expr)
+
+    def lookup_variable(self, name: Token, expr: Expr):
+        if expr in self.locals:
+            distance = self.locals[expr]
+            return self.environment.get_at(distance, name.lexeme)
+        else:
+            return self.global_environment.get(name)
 
     def visit_literal_expr(self, expr: Literal):
         return expr.value
@@ -127,6 +147,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def execute(self, stmt: Stmt):
         return stmt.accept(self)
+
+    def resolve(self, expr: Expr, depth: int):
+        self.locals[expr] = depth
 
     def execute_block(self, statements: list[Stmt], env: Environment):
         previous = self.environment
@@ -235,7 +258,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if not isinstance(callee, LoxCallable):
             raise LoxRuntimeError(expr.paren, "Can only call functions and classes.")
         if len(arguments) != callee.arity():
-            raise LoxRuntimeError(expr.paren,f"Expected {callee.arity()} arguments but got {len(arguments)}.")
+            raise LoxRuntimeError(
+                expr.paren,
+                f"Expected {callee.arity()} arguments but got {len(arguments)}.",
+            )
         return callee.call(self, arguments)
 
     def visit_function_stmt(self, stmt: Function):

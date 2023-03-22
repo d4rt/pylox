@@ -51,7 +51,7 @@ class TokenType(Enum):
     EOF = 39
 
 
-@dataclass
+@dataclass(frozen=True)
 class Token:
     type: TokenType = TokenType.NIL
     lexeme: str = ""

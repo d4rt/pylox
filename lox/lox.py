@@ -6,6 +6,7 @@ from lox.scanner import Scanner
 from lox.parser import Parser
 from lox.lox_token import Token, TokenType
 from lox.interpreter import Interpreter, LoxRuntimeError
+from lox.resolver import Resolver
 
 
 @dataclass
@@ -36,8 +37,16 @@ class Lox:
         parser = Parser(tokens, lox=self)
         statements = parser.parse()
         interpreter = Interpreter(lox=self)
+
         if self.had_error:
             return
+
+        resolver = Resolver(self, interpreter)
+        resolver.resolve(statements)
+
+        if self.had_error:
+            return
+
         interpreter.interpret(statements)
 
     def error(self, line: int, message: str) -> None:

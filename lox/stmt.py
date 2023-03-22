@@ -17,6 +17,10 @@ class StmtVisitor(ABC):
         pass
 
     @abstractmethod
+    def visit_class_stmt(self, expr: "Expr"):
+        pass
+
+    @abstractmethod
     def visit_if_stmt(self, expr: "Expr"):
         pass
 
@@ -76,6 +80,18 @@ class Function(Stmt):
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_function_stmt(self)
+
+
+class Class(Stmt):
+    def __init__(self, name: Token, methods: list[Function]) -> None:
+        self.name = name
+        self.methods = methods
+
+    def __str__(self) -> str:
+        return "ClassStmt " + str(self.name) + str(self.methods)
+
+    def accept(self, visitor: StmtVisitor) -> None:
+        return visitor.visit_class_stmt(self)
 
 
 class If(Stmt):

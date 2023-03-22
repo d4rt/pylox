@@ -12,6 +12,14 @@ class ExprVisitor(ABC):
         pass
 
     @abstractmethod
+    def visit_get_expr(self, expr: "Expr"):
+        pass
+
+    @abstractmethod
+    def visit_this_expr(self, expr: "Expr"):
+        pass
+
+    @abstractmethod
     def visit_grouping_expr(self, expr: "Expr"):
         pass
 
@@ -21,6 +29,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_logical_expr(self, expr: "Expr"):
+        pass
+
+    @abstractmethod
+    def visit_set_expr(self, expr: "Expr"):
         pass
 
     @abstractmethod
@@ -68,6 +80,29 @@ class Call(Expr):
         return visitor.visit_call_expr(self)
 
 
+class Get(Expr):
+    def __init__(self, object: Expr, name: Token) -> None:
+        self.object = object
+        self.name = name
+
+    def __str__(self) -> str:
+        return "GetExpr " + str(self.object) + str(self.name)
+
+    def accept(self, visitor: ExprVisitor) -> None:
+        return visitor.visit_get_expr(self)
+
+
+class This(Expr):
+    def __init__(self, keyword: Token) -> None:
+        self.keyword = keyword
+
+    def __str__(self) -> str:
+        return "ThisExpr " + str(self.keyword)
+
+    def accept(self, visitor: ExprVisitor) -> None:
+        return visitor.visit_this_expr(self)
+
+
 class Grouping(Expr):
     def __init__(self, expression: Expr) -> None:
         self.expression = expression
@@ -101,6 +136,19 @@ class Logical(Expr):
 
     def accept(self, visitor: ExprVisitor) -> None:
         return visitor.visit_logical_expr(self)
+
+
+class Set(Expr):
+    def __init__(self, object: Expr, name: Token, value: Expr) -> None:
+        self.object = object
+        self.name = name
+        self.value = value
+
+    def __str__(self) -> str:
+        return "SetExpr " + str(self.object) + str(self.name) + str(self.value)
+
+    def accept(self, visitor: ExprVisitor) -> None:
+        return visitor.visit_set_expr(self)
 
 
 class Unary(Expr):

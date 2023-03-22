@@ -10,6 +10,13 @@ from enum import Enum
 class FunctionType(Enum):
     NONE = 0
     FUNCTION = 1
+    INITIALIZER = 2
+    METHOD = 3
+
+
+class ClassType(Enum):
+    NONE = 0
+    CLASS = 1
 
 
 class Resolver(ExprVisitor, StmtVisitor):
@@ -19,6 +26,7 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.interpreter = interpreter
         self.scopes = []
         self.current_function = FunctionType.NONE
+        self.current_class = ClassType.NONE
 
     def resolve(self, obj):
         if isinstance(obj, list):
@@ -73,6 +81,26 @@ class Resolver(ExprVisitor, StmtVisitor):
         self.resolve(stmt.statements)
         self.end_scope()
 
+    def visit_class_stmt(self, stmt: Class):
+        enclosing_class = self.current_class
+        self.current_class = ClassType.CLASS
+
+        self.declare(stmt.name)
+        self.define(stmt.name)
+
+        self.begin_scope()
+        self.scopes[-1]["this"] = True
+
+        for method in stmt.methods:
+            decl = FunctionType.METHOD
+            if method.name.lexeme == "init":
+                decl = FunctionType.INITIALIZER
+            self.resolve_function(method, decl)
+
+        self.end_scope()
+
+        self.current_class = enclosing_class
+
     def visit_expression_stmt(self, stmt: Expression):
         self.resolve(stmt.expression)
 
@@ -94,6 +122,10 @@ class Resolver(ExprVisitor, StmtVisitor):
         if self.current_function == FunctionType.NONE:
             self.lox.parse_error(stmt.keyword, "Can't return from top-level code.")
         if stmt.value:
+            if self.current_function == FunctionType.INITIALIZER:
+                self.lox.parse_error(
+                    stmt.keyword, "Can't return a value from an initializer."
+                )
             self.resolve(stmt.value)
 
     def visit_var_stmt(self, stmt: Var):
@@ -126,6 +158,9 @@ class Resolver(ExprVisitor, StmtVisitor):
         for arg in expr.arguments:
             self.resolve(arg)
 
+    def visit_get_expr(self, expr: Get):
+        self.resolve(expr.object)
+
     def visit_grouping_expr(self, expr: Grouping):
         self.resolve(expr.expression)
 
@@ -135,6 +170,16 @@ class Resolver(ExprVisitor, StmtVisitor):
     def visit_logical_expr(self, expr: Logical):
         self.resolve(expr.left)
         self.resolve(expr.right)
+
+    def visit_set_expr(self, expr: Set):
+        self.resolve(expr.value)
+        self.resolve(expr.object)
+
+    def visit_this_expr(self, expr: This):
+        if self.current_class == ClassType.NONE:
+            self.lox.parse_error(expr.keyword, "Can't use 'this' outside of a class.")
+            return
+        self.resolve_local(expr, expr.keyword)
 
     def visit_unary_expr(self, expr: Unary):
         self.resolve(expr.right)

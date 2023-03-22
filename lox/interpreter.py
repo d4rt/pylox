@@ -30,9 +30,17 @@ class ClockCallable(LoxCallable):
 
 
 class LoxFunction(LoxCallable):
-    def __init__(self, declaration: Function, closure: Environment):
+    def __init__(
+        self, declaration: Function, closure: Environment, is_initializer: bool = False
+    ):
         self.declaration = declaration
         self.closure = closure
+        self.is_initializer = is_initializer
+
+    def bind(self, instance: "LoxInstance") -> "LoxFunction":
+        env = Environment(self.closure)
+        env.define("this", instance)
+        return LoxFunction(self.declaration, env, self.is_initializer)
 
     def call(self, interpreter: "Interpreter", arguments: list):
         env = Environment(self.closure)
@@ -41,7 +49,11 @@ class LoxFunction(LoxCallable):
         try:
             interpreter.execute_block(self.declaration.body, env)
         except Return as r:
+            if self.is_initializer:
+                return self.closure.get_at(0, "this")
             return r.value
+        if self.is_initializer:
+            return self.closure.get_at(0, "this")
 
     def arity(self) -> int:
         return len(self.declaration.params)
@@ -54,6 +66,54 @@ class Return(RuntimeError):
     def __init__(self, value):
         super().__init__()
         self.value = value
+
+
+class LoxClass(LoxCallable):
+    def __init__(self, name: str, methods: dict[str, LoxFunction]):
+        self.name = name
+        self.methods = methods
+
+    def find_method(self, name: str):
+        if name in self.methods:
+            return self.methods[name]
+
+    def call(self, interpreter: "Interpreter", arguments: list):
+        instance = LoxInstance(self)
+        initializer = self.find_method("init")
+        if initializer:
+            initializer.bind(instance).call(interpreter, arguments)
+        return instance
+
+    def arity(self) -> int:
+        initializer = self.find_method("init")
+        if not initializer:
+            return 0
+        return initializer.arity()
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class LoxInstance:
+    def __init__(self, klass: LoxClass):
+        self.klass = klass
+        self.fields = {}
+
+    def get(self, name: Token):
+        if name.lexeme in self.fields:
+            return self.fields[name.lexeme]
+
+        method = self.klass.find_method(name.lexeme)
+        if method:
+            return method.bind(self)
+
+        raise LoxRuntimeError(name, f"Undefined property '{name.lexeme}'.")
+
+    def set(self, name: Token, value):
+        self.fields[name.lexeme] = value
+
+    def __str__(self) -> str:
+        return f"{self.klass.name} instance"
 
 
 class Interpreter(ExprVisitor, StmtVisitor):
@@ -105,6 +165,17 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_block_stmt(self, stmt: Block) -> None:
         self.execute_block(stmt.statements, Environment(enclosing=self.environment))
 
+    def visit_class_stmt(self, stmt: Class) -> None:
+        self.environment.define(stmt.name.lexeme, None)
+
+        methods = {}
+        for method in stmt.methods:
+            fn = LoxFunction(method, self.environment, method.name.lexeme == "init")
+            methods[method.name.lexeme] = fn
+
+        klass = LoxClass(stmt.name.lexeme, methods)
+        self.environment.assign(stmt.name, klass)
+
     def visit_assign_expr(self, expr: Assign):
         value = self.evaluate(expr.value)
         distance = self.locals.get(expr)
@@ -138,6 +209,17 @@ class Interpreter(ExprVisitor, StmtVisitor):
             if Interpreter.is_truthy(left):
                 return self.evaluate(expr.right)
             return left
+
+    def visit_set_expr(self, expr: Set):
+        obj = self.evaluate(expr.object)
+        if not isinstance(obj, LoxInstance):
+            raise LoxRuntimeError(expr.name, "Only instances have fields.")
+        val = self.evaluate(expr.value)
+        obj.set(expr.name, val)
+        return val
+
+    def visit_this_expr(self, expr: This):
+        return self.lookup_variable(expr.keyword, expr)
 
     def visit_grouping_expr(self, expr: Grouping):
         return self.evaluate(expr.expression)
@@ -263,6 +345,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 f"Expected {callee.arity()} arguments but got {len(arguments)}.",
             )
         return callee.call(self, arguments)
+
+    def visit_get_expr(self, expr: Get):
+        obj = self.evaluate(expr.object)
+        if isinstance(obj, LoxInstance):
+            return obj.get(expr.name)
+        raise LoxRuntimeError(expr.name, "Only instances have properties.")
 
     def visit_function_stmt(self, stmt: Function):
         fn = LoxFunction(stmt, self.environment)

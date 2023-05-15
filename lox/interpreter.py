@@ -5,13 +5,56 @@ from lox.stmt import *
 from lox.lox_token import Token, TokenType
 from lox.errors import LoxRuntimeError
 from lox.environment import Environment
+from dataclasses import dataclass
+from abc import ABC
+from time import time
 
+class LoxCallable(ABC):
+    def call(self, interpreter: 'Interpreter', arguments: list):
+        raise NotImplementedError
+    def arity(self) -> int:
+        raise NotImplementedError
+
+class ClockCallable(LoxCallable):
+    def call(self, interpreter: 'Interpreter', arguments: list):
+        return float(time())
+    def arity(self) -> int:
+        return 0
+    def __str__(self) -> str:
+        return "<native fn>"
+
+class LoxFunction(LoxCallable):
+    def __init__(self, declaration: Function, closure: Environment):
+        self.declaration = declaration
+        self.closure = closure
+
+    def call(self, interpreter: 'Interpreter', arguments: list):
+        env = Environment(self.closure)
+        for p, a in zip(self.declaration.params, arguments):
+            env.define(p.lexeme, a)
+        try:
+            interpreter.execute_block(self.declaration.body, env)
+        except Return as r:
+            return r.value
+
+    def arity(self) -> int:
+        return len(self.declaration.params)
+
+    def __str__(self) -> str:
+        return f"<fn {self.declaration.name.lexeme}>"
+
+class Return(RuntimeError):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
 
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self, lox: "Lox", env: Environment = Environment()):
         super().__init__()
         self.lox = lox
-        self.environment = env
+        self.global_environment = env
+        self.environment = self.global_environment
+        self.global_environment.define("clock", ClockCallable())
 
     def interpret(self, statements: list[Stmt]):
         try:
@@ -32,6 +75,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_print_stmt(self, stmt: Print) -> None:
         val = self.evaluate(stmt.expression)
         print(self.stringify(val))
+
+    def visit_return_stmt(self, stmt: Return):
+        val = None
+        if stmt.value is not None:
+            val = self.evaluate(stmt.value)
+        raise Return(val)
 
     def visit_var_stmt(self, stmt: Var) -> None:
         val = None
@@ -179,3 +228,16 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if t == TokenType.EQUAL_EQUAL:
             return Interpreter.is_equal(left, right)
         return None
+
+    def visit_call_expr(self, expr: Call):
+        callee = self.evaluate(expr.callee)
+        arguments = [self.evaluate(arg) for arg in expr.arguments]
+        if not isinstance(callee, LoxCallable):
+            raise LoxRuntimeError(expr.paren, "Can only call functions and classes.")
+        if len(arguments) != callee.arity():
+            raise LoxRuntimeError(expr.paren,f"Expected {callee.arity()} arguments but got {len(arguments)}.")
+        return callee.call(self, arguments)
+
+    def visit_function_stmt(self, stmt: Function):
+        fn = LoxFunction(stmt, self.environment)
+        self.environment.define(stmt.name.lexeme, fn)

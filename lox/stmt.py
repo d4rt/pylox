@@ -13,6 +13,10 @@ class StmtVisitor(ABC):
         pass
 
     @abstractmethod
+    def visit_function_stmt(self, expr: "Expr"):
+        pass
+
+    @abstractmethod
     def visit_if_stmt(self, expr: "Expr"):
         pass
 
@@ -22,6 +26,10 @@ class StmtVisitor(ABC):
 
     @abstractmethod
     def visit_print_stmt(self, expr: "Expr"):
+        pass
+
+    @abstractmethod
+    def visit_return_stmt(self, expr: "Expr"):
         pass
 
     @abstractmethod
@@ -40,7 +48,7 @@ class Block(Stmt):
         self.statements = statements
 
     def __str__(self) -> str:
-        return "BlockStmt " + str(self.statements)
+        return "BlockStmt "  + str(self.statements)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_block_stmt(self)
@@ -51,10 +59,23 @@ class Expression(Stmt):
         self.expression = expression
 
     def __str__(self) -> str:
-        return "ExpressionStmt " + str(self.expression)
+        return "ExpressionStmt "  + str(self.expression)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_expression_stmt(self)
+
+
+class Function(Stmt):
+    def __init__(self, name: Token, params: list[Token], body: list[Stmt]) -> None:
+        self.name = name
+        self.params = params
+        self.body = body
+
+    def __str__(self) -> str:
+        return "FunctionStmt "  + str(self.name) + str(self.params) + str(self.body)
+
+    def accept(self, visitor: StmtVisitor) -> None:
+        return visitor.visit_function_stmt(self)
 
 
 class If(Stmt):
@@ -64,12 +85,7 @@ class If(Stmt):
         self.else_branch = else_branch
 
     def __str__(self) -> str:
-        return (
-            "IfStmt "
-            + str(self.condition)
-            + str(self.then_branch)
-            + str(self.else_branch)
-        )
+        return "IfStmt "  + str(self.condition) + str(self.then_branch) + str(self.else_branch)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_if_stmt(self)
@@ -81,7 +97,7 @@ class While(Stmt):
         self.body = body
 
     def __str__(self) -> str:
-        return "WhileStmt " + str(self.condition) + str(self.body)
+        return "WhileStmt "  + str(self.condition) + str(self.body)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_while_stmt(self)
@@ -92,10 +108,22 @@ class Print(Stmt):
         self.expression = expression
 
     def __str__(self) -> str:
-        return "PrintStmt " + str(self.expression)
+        return "PrintStmt "  + str(self.expression)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_print_stmt(self)
+
+
+class Return(Stmt):
+    def __init__(self, keyword: Token, value: Expr) -> None:
+        self.keyword = keyword
+        self.value = value
+
+    def __str__(self) -> str:
+        return "ReturnStmt "  + str(self.keyword) + str(self.value)
+
+    def accept(self, visitor: StmtVisitor) -> None:
+        return visitor.visit_return_stmt(self)
 
 
 class Var(Stmt):
@@ -104,7 +132,7 @@ class Var(Stmt):
         self.initializer = initializer
 
     def __str__(self) -> str:
-        return "VarStmt " + str(self.name) + str(self.initializer)
+        return "VarStmt "  + str(self.name) + str(self.initializer)
 
     def accept(self, visitor: StmtVisitor) -> None:
         return visitor.visit_var_stmt(self)

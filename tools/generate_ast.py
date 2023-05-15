@@ -19,6 +19,7 @@ from lox.expr import Expr
 
     EXPRS = {
         "Binary": ["left: Expr", "operator: Token", "right: Expr"],
+        "Call": ["callee: Expr", "paren: Token", "arguments: list[Expr]"],
         "Grouping": ["expression: Expr"],
         "Literal": ["value: object"],
         "Logical": ["left: Expr", "operator: Token", "right: Expr"],
@@ -29,9 +30,11 @@ from lox.expr import Expr
     STMT = {
         "Block": ["statements: list[Stmt]"],
         "Expression": ["expression: Expr"],
+        "Function": ["name: Token", "params: list[Token]", "body: list[Stmt]"],
         "If": ["condition: Expr", "then_branch: Stmt", "else_branch: Stmt"],
         "While": ["condition: Expr", "body: Stmt"],
         "Print": ["expression: Expr"],
+        "Return": ["keyword: Token", "value: Expr"],
         "Var": ["name: Token", "initializer: Expr"],
     }
 

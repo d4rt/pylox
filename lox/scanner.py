@@ -127,7 +127,7 @@ class Scanner:
             self.identifier()
             return
 
-        self.lox.error(self.line, f"Unexpected character : {c}")
+        self.lox.error(self.line, f"Unexpected character.")
         return
 
     def string(self):
